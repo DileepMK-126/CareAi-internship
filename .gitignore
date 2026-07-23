@@ -1,0 +1,32 @@
+# Node
+node_modules/
+**/node_modules/
+
+# Environment files
+.env
+.env.*
+**/.env
+
+# Python
+__pycache__/
+**/__pycache__/
+*.pyc
+
+# Build files
+dist/
+build/
+
+# Expo
+.expo/
+
+# Local database
+backend/database/local_db.json
+
+# Uploads
+uploads/
+**/uploads/
+
+# Service account keys
+firebase-key.json
+backend/firebase-key.json
+*-firebase-adminsdk-*.json
