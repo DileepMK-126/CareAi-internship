@@ -1,6 +1,9 @@
 import { useState, useCallback, useEffect } from "react";
-import { Upload, FileText, Trash2, Download, AlertCircle, CheckCircle, Loader } from "lucide-react";
+import { Upload, FileText, Trash2, Download, AlertCircle, CheckCircle, Loader, FileCheck } from "lucide-react";
 import { api } from "../api";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Badge } from "../components/ui/Badge";
+import { AlertBanner } from "../components/ui/AlertBanner";
 
 export default function ReportUpload() {
   const [reports, setReports] = useState<any[]>([]);
@@ -22,7 +25,7 @@ export default function ReportUpload() {
       setAnalysis(res.analysis);
       await loadReports();
     } catch (e: any) {
-      setError(e.message);
+      setError(e.message || "Failed to analyze document");
     } finally {
       setUploading(false);
     }
@@ -39,19 +42,20 @@ export default function ReportUpload() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-white">Medical Report Upload</h1>
-        <p className="text-gray-500 text-sm mt-0.5">Upload PDF, DOCX, or TXT files for AI-powered analysis</p>
-      </div>
+    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+      <PageHeader
+        title="Medical Report Ingestion & AI Analysis"
+        subtitle="Upload pathology, lab, radiology reports, or clinical notes for automated extraction"
+        icon={FileText}
+      />
 
-      {}
+      {/* Drag & Drop Upload Zone */}
       <div
         onDragOver={e => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
         onDrop={handleDrop}
-        className={`border-2 border-dashed rounded-2xl p-12 text-center transition-all cursor-pointer ${
-          dragging ? "border-blue-500 bg-blue-500/5" : "border-gray-700 hover:border-gray-600 bg-gray-900"
+        className={`border-2 border-dashed rounded-xl p-10 text-center transition-all cursor-pointer bg-white ${
+          dragging ? "border-blue-600 bg-blue-50/60 shadow-md" : "border-slate-300 hover:border-blue-500 hover:bg-slate-50/80 shadow-xs"
         }`}
         onClick={() => document.getElementById("file-input")?.click()}
       >
@@ -63,58 +67,71 @@ export default function ReportUpload() {
           onChange={e => e.target.files?.[0] && handleUpload(e.target.files[0])}
         />
         {uploading ? (
-          <div className="flex flex-col items-center gap-3">
-            <Loader size={36} className="text-blue-400 animate-spin" />
-            <p className="text-gray-300 font-medium">Uploading and analyzing...</p>
+          <div className="flex flex-col items-center gap-3 py-4">
+            <Loader size={36} className="text-blue-600 animate-spin" />
+            <p className="text-sm font-semibold text-slate-800">Processing Document with Medical LLM...</p>
+            <p className="text-xs text-slate-500">Extracting clinical metrics, reference ranges, and critical findings</p>
           </div>
         ) : (
-          <>
-            <Upload size={40} className="text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-300 font-medium mb-1">Drag & drop your medical report</p>
-            <p className="text-sm text-gray-600">or click to browse — PDF, DOCX, TXT supported</p>
-          </>
+          <div className="flex flex-col items-center">
+            <div className="w-14 h-14 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center mb-3">
+              <Upload size={24} className="text-blue-600" />
+            </div>
+            <p className="text-sm font-bold text-slate-900 mb-1">Drag & drop your clinical report here</p>
+            <p className="text-xs text-slate-500 mb-3">or click to browse files from your computer</p>
+            <div className="flex items-center gap-2">
+              <Badge variant="neutral" size="sm">PDF</Badge>
+              <Badge variant="neutral" size="sm">DOCX</Badge>
+              <Badge variant="neutral" size="sm">TXT</Badge>
+            </div>
+          </div>
         )}
       </div>
 
-      {error && (
-        <div className="flex items-center gap-2 bg-red-900/30 border border-red-500/30 text-red-400 rounded-xl px-4 py-3 text-sm">
-          <AlertCircle size={14} /> {error}
-        </div>
-      )}
+      {error && <AlertBanner variant="error" title="Ingestion Error" message={error} dismissible />}
 
-      {}
+      {/* Analysis Output Section */}
       {analysis && (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-4">
-          <div className="flex items-center gap-2 text-green-400">
-            <CheckCircle size={16} />
-            <span className="font-semibold">Analysis Complete</span>
+        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-5">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <CheckCircle size={18} className="text-emerald-600" />
+              <h2 className="font-bold text-slate-900 text-sm">Diagnostic Extraction Results</h2>
+            </div>
+            <Badge variant="success" size="md">Analysis Complete</Badge>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: "Patient", value: analysis.patient_name },
+              { label: "Patient Name", value: analysis.patient_name },
               { label: "Age", value: analysis.age || "N/A" },
               { label: "Gender", value: analysis.gender },
-              { label: "Date", value: analysis.report_date },
+              { label: "Report Date", value: analysis.report_date },
             ].map(({ label, value }) => (
-              <div key={label} className="bg-gray-800 rounded-lg p-3">
-                <p className="text-xs text-gray-500 mb-1">{label}</p>
-                <p className="text-sm font-semibold text-white">{value}</p>
+              <div key={label} className="bg-slate-50 border border-slate-200/80 rounded-lg p-3">
+                <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{label}</p>
+                <p className="text-sm font-bold text-slate-900 mt-0.5">{value || "N/A"}</p>
               </div>
             ))}
           </div>
 
           <div>
-            <p className="text-sm font-medium text-gray-400 mb-2">AI Summary</p>
-            <p className="text-sm text-gray-300 bg-gray-800 rounded-lg p-3 leading-relaxed">{analysis.summary}</p>
+            <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Executive Summary</p>
+            <div className="text-xs text-slate-800 bg-slate-50 border border-slate-200 rounded-lg p-3.5 leading-relaxed font-medium">
+              {analysis.summary}
+            </div>
           </div>
 
           {analysis.alerts?.length > 0 && (
             <div>
-              <p className="text-sm font-medium text-red-400 mb-2 flex items-center gap-1"><AlertCircle size={13} /> Critical Alerts</p>
-              <div className="space-y-1.5">
+              <p className="text-xs font-bold text-red-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <AlertCircle size={14} className="text-red-600" /> Critical Lab Alerts
+              </p>
+              <div className="space-y-2">
                 {analysis.alerts.map((a: string, i: number) => (
-                  <div key={i} className="text-sm text-red-300 bg-red-900/20 border border-red-500/20 rounded-lg px-3 py-2">{a}</div>
+                  <div key={i} className="text-xs text-red-900 bg-red-50 border border-red-200 rounded-lg p-3 font-medium">
+                    {a}
+                  </div>
                 ))}
               </div>
             </div>
@@ -122,27 +139,27 @@ export default function ReportUpload() {
 
           {analysis.test_metrics?.length > 0 && (
             <div>
-              <p className="text-sm font-medium text-gray-400 mb-2">Diagnostic Metrics</p>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-800">
-                      <th className="text-left py-2 px-3 text-xs text-gray-500 font-medium">Test</th>
-                      <th className="text-left py-2 px-3 text-xs text-gray-500 font-medium">Value</th>
-                      <th className="text-left py-2 px-3 text-xs text-gray-500 font-medium">Reference</th>
-                      <th className="text-left py-2 px-3 text-xs text-gray-500 font-medium">Status</th>
+              <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Extracted Test Metrics</p>
+              <div className="overflow-x-auto border border-slate-200 rounded-lg">
+                <table className="w-full text-xs text-left">
+                  <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+                    <tr>
+                      <th className="py-2.5 px-3">Test Name</th>
+                      <th className="py-2.5 px-3">Measured Value</th>
+                      <th className="py-2.5 px-3">Reference Range</th>
+                      <th className="py-2.5 px-3">Status</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-slate-100">
                     {analysis.test_metrics.map((m: any, i: number) => (
-                      <tr key={i} className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors">
-                        <td className="py-2.5 px-3 text-white">{m.test_name}</td>
-                        <td className="py-2.5 px-3 font-mono text-white">{m.value} {m.unit}</td>
-                        <td className="py-2.5 px-3 text-gray-500">{m.reference_range}</td>
+                      <tr key={i} className="hover:bg-slate-50/60 transition-colors">
+                        <td className="py-2.5 px-3 font-medium text-slate-900">{m.test_name}</td>
+                        <td className="py-2.5 px-3 font-mono font-semibold text-slate-900">{m.value} {m.unit}</td>
+                        <td className="py-2.5 px-3 text-slate-500">{m.reference_range}</td>
                         <td className="py-2.5 px-3">
-                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${m.is_abnormal ? "bg-red-900/40 text-red-400" : "bg-green-900/40 text-green-400"}`}>
+                          <Badge variant={m.is_abnormal ? "danger" : "success"} size="sm">
                             {m.is_abnormal ? "Abnormal" : "Normal"}
-                          </span>
+                          </Badge>
                         </td>
                       </tr>
                     ))}
@@ -154,11 +171,12 @@ export default function ReportUpload() {
 
           {analysis.recommendations?.length > 0 && (
             <div>
-              <p className="text-sm font-medium text-blue-400 mb-2">Recommendations</p>
-              <div className="space-y-1.5">
+              <p className="text-xs font-bold text-blue-700 uppercase tracking-wider mb-2">Clinical Recommendations</p>
+              <div className="space-y-2">
                 {analysis.recommendations.map((r: string, i: number) => (
-                  <div key={i} className="text-sm text-gray-300 bg-blue-900/10 border border-blue-500/20 rounded-lg px-3 py-2 flex items-start gap-2">
-                    <CheckCircle size={13} className="text-blue-400 mt-0.5 flex-shrink-0" /> {r}
+                  <div key={i} className="text-xs text-slate-800 bg-blue-50/60 border border-blue-200 rounded-lg p-3 flex items-start gap-2 font-medium">
+                    <CheckCircle size={14} className="text-blue-600 mt-0.5 flex-shrink-0" />
+                    <span>{r}</span>
                   </div>
                 ))}
               </div>
@@ -167,34 +185,40 @@ export default function ReportUpload() {
         </div>
       )}
 
-      {}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-        <h2 className="font-semibold text-white text-sm mb-4">Upload History ({reports.length})</h2>
+      {/* Reports History */}
+      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs">
+        <h2 className="font-bold text-slate-900 text-sm mb-4">Ingested Document Repository ({reports.length})</h2>
         {reports.length === 0 ? (
-          <p className="text-sm text-gray-600 text-center py-6">No reports uploaded yet.</p>
+          <p className="text-xs text-slate-500 text-center py-8 border border-slate-100 border-dashed rounded-lg">
+            No medical reports uploaded yet.
+          </p>
         ) : (
           <div className="space-y-2">
             {[...reports].reverse().map((r: any) => (
-              <div key={r.id} className="flex items-center gap-3 p-3 bg-gray-800/50 rounded-lg hover:bg-gray-800 transition-colors">
-                <FileText size={16} className="text-blue-400 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-white truncate">{r.filename}</p>
-                  <p className="text-xs text-gray-500">{r.file_type} · {r.upload_date}</p>
+              <div key={r.id} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200/80 rounded-lg hover:border-slate-300 transition-all">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-700 flex-shrink-0">
+                    <FileCheck size={16} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-slate-900 truncate">{r.filename}</p>
+                    <p className="text-[11px] text-slate-500">{r.file_type || "PDF"} · Ingested {r.upload_date}</p>
+                  </div>
                 </div>
-                <div className="flex gap-2 flex-shrink-0">
+                <div className="flex items-center gap-2 flex-shrink-0">
                   <a
                     href={api.downloadPdf(r.id)}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex items-center gap-1 text-xs text-blue-400 border border-blue-400/30 px-2 py-1 rounded hover:bg-blue-400/10 transition-all"
+                    className="flex items-center gap-1 text-xs font-semibold text-blue-700 bg-white border border-blue-200 px-2.5 py-1 rounded-md hover:bg-blue-50 transition-colors"
                   >
-                    <Download size={11} /> PDF
+                    <Download size={12} /> PDF Report
                   </a>
                   <button
                     onClick={() => handleDelete(r.id)}
-                    className="flex items-center gap-1 text-xs text-red-400 border border-red-400/30 px-2 py-1 rounded hover:bg-red-400/10 transition-all"
+                    className="flex items-center gap-1 text-xs font-semibold text-red-700 bg-white border border-red-200 px-2.5 py-1 rounded-md hover:bg-red-50 transition-colors"
                   >
-                    <Trash2 size={11} /> Delete
+                    <Trash2 size={12} /> Delete
                   </button>
                 </div>
               </div>

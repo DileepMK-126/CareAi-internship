@@ -1,6 +1,8 @@
 import { useState, useRef } from "react";
 import { api } from "../api";
 import { Mic, MicOff, Volume2, Globe, Loader, Languages, Send } from "lucide-react";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Badge } from "../components/ui/Badge";
 
 const LANGUAGES = [
   { code: "en", name: "English",   flag: "🇬🇧", script: "Hello" },
@@ -74,7 +76,7 @@ export default function VoiceAssistant() {
     setQuery(""); setLoading(true);
     try {
       const res = await api.voiceRespond(text, lang);
-      const response = res.response || "I'm here to help with your health questions.";
+      const response = res.response || "I am here to assist with your clinical questions.";
       setMessages(prev => [...prev, { role: "assistant", text: response, lang }]);
       speak(response, lang);
     } catch { setMessages(prev => [...prev, { role: "assistant", text: "Sorry, I could not process your query. Please try again.", lang }]); }
@@ -84,53 +86,59 @@ export default function VoiceAssistant() {
   const selectedLang = LANGUAGES.find(l => l.code === lang)!;
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-pink-600 flex items-center justify-center">
-          <Languages size={20} className="text-white" />
-        </div>
-        <div>
-          <h1 className="text-xl font-bold text-white">Multilingual Voice Health Assistant</h1>
-          <p className="text-sm text-gray-500">Multilingual health assistant supporting 8 regional languages with offline capability</p>
-        </div>
-      </div>
+    <div className="p-6 max-w-5xl mx-auto space-y-6">
+      <PageHeader
+        title="Multilingual Voice Health Assistant"
+        subtitle="Voice-activated clinical AI support supporting 8 regional Indian languages"
+        icon={Languages}
+      />
 
-      {}
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4">
-        <p className="text-xs text-gray-500 mb-3">Choose Your Language</p>
+      {/* Language Selector */}
+      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
+        <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2.5">Select Primary Language</p>
         <div className="flex flex-wrap gap-2">
           {LANGUAGES.map(l => (
-            <button key={l.code} onClick={() => setLang(l.code)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all border ${
+            <button
+              key={l.code}
+              onClick={() => setLang(l.code)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-all border ${
                 lang === l.code
-                  ? "bg-violet-600 border-violet-500 text-white"
-                  : "bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600 hover:text-white"
-              }`}>
+                  ? "bg-blue-600 border-blue-700 text-white shadow-2xs"
+                  : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+              }`}
+            >
               <span>{l.flag}</span>
               <span>{l.name}</span>
-              <span className="text-xs opacity-60">{l.script}</span>
+              <span className="text-[11px] opacity-70 font-normal">({l.script})</span>
             </button>
           ))}
         </div>
       </div>
 
-      {}
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden flex flex-col h-[420px]">
-        <div className="p-3 border-b border-gray-800 flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-          <span className="text-xs text-gray-400">AI Health Assistant — {selectedLang.flag} {selectedLang.name}</span>
-          {speaking && <span className="ml-auto text-xs text-violet-400 flex items-center gap-1"><Volume2 size={11} /> Speaking...</span>}
+      {/* Voice Chat Window */}
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs flex flex-col h-[440px]">
+        <div className="px-4 py-3 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-xs font-bold text-slate-800">Voice AI Session — {selectedLang.flag} {selectedLang.name}</span>
+          </div>
+          {speaking && (
+            <Badge variant="info" size="sm" dot>Synthesizing Voice Output...</Badge>
+          )}
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-white">
           {messages.length === 0 && (
-            <div className="text-center py-8">
-              <Globe size={32} className="text-gray-700 mx-auto mb-2" />
-              <p className="text-gray-600 text-sm mb-4">Ask any health question in your language</p>
-              <div className="flex flex-wrap gap-2 justify-center">
+            <div className="text-center py-10">
+              <Globe size={36} className="text-slate-300 mx-auto mb-2" />
+              <p className="text-xs font-semibold text-slate-600 mb-3">Ask any health question via voice or text input</p>
+              <div className="flex flex-wrap gap-2 justify-center max-w-lg mx-auto">
                 {(SAMPLE_QUESTIONS[lang] || SAMPLE_QUESTIONS.en).map((q, i) => (
-                  <button key={i} onClick={() => handleSend(q)}
-                    className="text-xs px-3 py-1.5 bg-gray-800 border border-gray-700 hover:border-violet-500/50 text-gray-400 hover:text-white rounded-xl transition-all">
+                  <button
+                    key={i}
+                    onClick={() => handleSend(q)}
+                    className="text-xs font-medium px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-full hover:border-blue-300 hover:bg-blue-50 transition-all"
+                  >
                     {q}
                   </button>
                 ))}
@@ -140,15 +148,18 @@ export default function VoiceAssistant() {
 
           {messages.map((m, i) => (
             <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-              <div className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm ${
+              <div className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-xs font-medium ${
                 m.role === "user"
-                  ? "bg-violet-600 text-white rounded-tr-sm"
-                  : "bg-gray-800 text-gray-200 rounded-tl-sm"
+                  ? "bg-blue-600 text-white rounded-tr-xs shadow-2xs"
+                  : "bg-slate-50 border border-slate-200 text-slate-900 rounded-tl-xs"
               }`}>
                 {m.role === "assistant" && (
-                  <button onClick={() => speak(m.text, lang)}
-                    className="float-right ml-2 mt-0.5 text-gray-500 hover:text-violet-400 transition-colors">
-                    <Volume2 size={12} />
+                  <button
+                    onClick={() => speak(m.text, lang)}
+                    className="float-right ml-2 mt-0.5 text-slate-400 hover:text-blue-600 transition-colors p-0.5"
+                    title="Replay Audio"
+                  >
+                    <Volume2 size={13} />
                   </button>
                 )}
                 {m.text}
@@ -158,35 +169,43 @@ export default function VoiceAssistant() {
 
           {loading && (
             <div className="flex justify-start">
-              <div className="bg-gray-800 px-4 py-2.5 rounded-2xl rounded-tl-sm flex items-center gap-2">
-                <Loader size={12} className="animate-spin text-violet-400" />
-                <span className="text-xs text-gray-400">Thinking...</span>
+              <div className="bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-2xl rounded-tl-xs flex items-center gap-2">
+                <Loader size={13} className="animate-spin text-blue-600" />
+                <span className="text-xs text-slate-500 font-medium">Synthesizing response...</span>
               </div>
             </div>
           )}
         </div>
 
-        {}
-        <div className="p-3 border-t border-gray-800 flex gap-2">
-          <button onClick={recording ? stopRecording : startRecording}
-            className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${
-              recording ? "bg-red-600 animate-pulse" : "bg-gray-800 hover:bg-gray-700"
-            }`}>
-            {recording ? <MicOff size={16} className="text-white" /> : <Mic size={16} className="text-gray-400" />}
+        {/* Input Bar */}
+        <div className="p-3 border-t border-slate-200 bg-slate-50 flex gap-2">
+          <button
+            onClick={recording ? stopRecording : startRecording}
+            className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-all ${
+              recording
+                ? "bg-red-600 text-white animate-pulse shadow-xs"
+                : "bg-white border border-slate-300 text-slate-600 hover:bg-slate-100"
+            }`}
+            title={recording ? "Stop Recording" : "Start Voice Input"}
+          >
+            {recording ? <MicOff size={16} /> : <Mic size={16} />}
           </button>
-          <input type="text" value={query} onChange={e => setQuery(e.target.value)}
+          <input
+            type="text"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
             onKeyDown={e => e.key === "Enter" && handleSend()}
-            placeholder={`Type or speak in ${selectedLang.name}...`}
-            className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500" />
-          <button onClick={() => handleSend()} disabled={!query.trim() || loading}
-            className="w-10 h-10 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-50 flex items-center justify-center flex-shrink-0 transition-all">
-            <Send size={14} className="text-white" />
+            placeholder={`Type or speak query in ${selectedLang.name}...`}
+            className="flex-1 bg-white border border-slate-300 rounded-lg px-4 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-500/10 font-medium transition-all"
+          />
+          <button
+            onClick={() => handleSend()}
+            disabled={!query.trim() || loading}
+            className="w-10 h-10 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white flex items-center justify-center flex-shrink-0 transition-all shadow-xs"
+          >
+            <Send size={14} />
           </button>
         </div>
-      </div>
-
-      <div className="text-center text-xs text-gray-600">
-        🎙️ Uses browser's built-in Speech Recognition (works offline in Chrome/Edge) · 🌐 AI responses via Groq LLM · 🚑 Emergency: 108
       </div>
     </div>
   );

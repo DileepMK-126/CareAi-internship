@@ -287,14 +287,6 @@ class MealPlanQuery(BaseModel):
     dietary_preferences: str = 'vegetarian'
     duration_days: int = 7
 
-class AppointmentCreate(BaseModel):
-    doctor: str
-    specialty: str
-    date: str
-    time: str
-    notes: str = ''
-    user_id: str
-
 class SecondOpinionQuery(BaseModel):
     primary_diagnosis: str
     symptoms: str
@@ -359,23 +351,6 @@ def analyze_meal(payload: MealAnalysisQuery):
 def create_meal_plan(payload: MealPlanQuery):
     result = ai_engines.generate_condition_meal_plan(payload.condition, payload.dietary_preferences, payload.duration_days)
     return {'result': result, 'condition': payload.condition}
-
-@app.post('/api/appointments')
-def create_appointment(payload: AppointmentCreate):
-    apt_id = str(uuid.uuid4())
-    checklist = ai_engines.get_appointment_checklist(payload.doctor, payload.specialty, payload.date, payload.time, payload.notes)
-    record = {'id': apt_id, 'user_id': payload.user_id, 'doctor': payload.doctor, 'specialty': payload.specialty, 'date': payload.date, 'time': payload.time, 'notes': payload.notes, 'checklist': checklist, 'status': 'Scheduled', 'created_at': now_iso()}
-    DatabaseManager.insert('appointments', apt_id, record)
-    return record
-
-@app.get('/api/appointments')
-def get_appointments(user_id: str):
-    return DatabaseManager.get_all('appointments', {'user_id': user_id})
-
-@app.delete('/api/appointments/{apt_id}')
-def delete_appointment(apt_id: str):
-    DatabaseManager.delete('appointments', apt_id)
-    return {'message': 'Appointment deleted.'}
 
 @app.post('/api/medications')
 def add_medication_reminder(payload: MedReminderCreate):

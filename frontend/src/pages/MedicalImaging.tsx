@@ -1,25 +1,28 @@
 import { useState, useEffect, useCallback } from "react";
-import { ScanLine, Upload, Loader, AlertCircle, ChevronDown } from "lucide-react";
+import { ScanLine, Upload, Loader, AlertCircle, Eye, Activity } from "lucide-react";
 import { api } from "../api";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Badge } from "../components/ui/Badge";
+import { AlertBanner } from "../components/ui/AlertBanner";
 
 const MODALITIES = [
-  { key: "xray", label: "Chest X-Ray", desc: "Pneumonia, Pleural Effusion" },
-  { key: "mri", label: "Brain MRI", desc: "Glioma, Meningioma" },
-  { key: "lesions", label: "Skin Lesion", desc: "Melanoma, BCC" },
+  { key: "xray", label: "Chest X-Ray", desc: "Pneumonia, Effusion, Infiltrates" },
+  { key: "mri", label: "Brain MRI", desc: "Glioma, Meningioma, Stroke" },
+  { key: "lesions", label: "Skin Lesion", desc: "Melanoma, Basal Cell" },
 ];
 
 function HeatmapGrid({ grid }: { grid: number[][] }) {
   if (!grid?.length) return null;
   return (
-    <div className="inline-block">
+    <div className="inline-block border border-slate-300 rounded-md overflow-hidden shadow-2xs">
       {grid.map((row, r) => (
         <div key={r} className="flex">
           {row.map((val, c) => (
             <div
               key={c}
-              className="w-7 h-7 border border-gray-900/50"
-              style={{ backgroundColor: `rgba(239,68,68,${val.toFixed(2)})` }}
-              title={`${(val * 100).toFixed(0)}%`}
+              className="w-7 h-7 border border-slate-200/40"
+              style={{ backgroundColor: `rgba(220,38,38,${val.toFixed(2)})` }}
+              title={`${(val * 100).toFixed(0)}% AI Attention`}
             />
           ))}
         </div>
@@ -46,7 +49,7 @@ export default function MedicalImaging() {
       const imgs = await api.getImages();
       setHistory(imgs);
     } catch (e: any) {
-      setError(e.message);
+      setError(e.message || "Failed to analyze image file");
     } finally {
       setUploading(false);
     }
@@ -58,128 +61,155 @@ export default function MedicalImaging() {
     if (file) handleFile(file);
   }, [modality]);
 
-  const confColor = result ? (result.confidence_score > 0.88 ? "text-green-400" : result.confidence_score > 0.80 ? "text-amber-400" : "text-red-400") : "";
+  const confBadge = result ? (result.confidence_score > 0.88 ? "success" : result.confidence_score > 0.80 ? "warning" : "danger") : "neutral";
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-white">Medical Imaging AI</h1>
-        <p className="text-gray-500 text-sm mt-0.5">Upload X-Ray, MRI, or Skin images for AI-powered diagnostic classification</p>
-      </div>
+    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+      <PageHeader
+        title="Medical Imaging AI Diagnostics"
+        subtitle="Automated deep learning classification for Radiographic X-Rays, Brain MRIs, and Dermatological Lesions"
+        icon={ScanLine}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {}
+        {/* Left Options & Upload */}
         <div className="space-y-4">
-          {}
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-            <p className="text-xs text-gray-500 font-medium mb-3">Select Imaging Modality</p>
-            <div className="grid grid-cols-3 gap-2">
+          {/* Modality Selector */}
+          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
+            <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2.5">Select Modality Protocol</p>
+            <div className="grid grid-cols-3 gap-2.5">
               {MODALITIES.map(m => (
                 <button
                   key={m.key}
                   onClick={() => setModality(m.key)}
                   className={`p-3 rounded-lg border text-left transition-all ${
-                    modality === m.key ? "border-blue-500 bg-blue-600/10" : "border-gray-700 hover:border-gray-600"
+                    modality === m.key
+                      ? "border-blue-600 bg-blue-50/60 shadow-xs"
+                      : "border-slate-200 hover:border-slate-300 bg-white"
                   }`}
                 >
-                  <p className={`text-xs font-semibold ${modality === m.key ? "text-blue-400" : "text-gray-300"}`}>{m.label}</p>
-                  <p className="text-xs text-gray-600 mt-0.5">{m.desc}</p>
+                  <p className={`text-xs font-bold ${modality === m.key ? "text-blue-700" : "text-slate-800"}`}>{m.label}</p>
+                  <p className="text-[10px] text-slate-500 mt-0.5 leading-tight">{m.desc}</p>
                 </button>
               ))}
             </div>
           </div>
 
-          {}
+          {/* Upload Box */}
           <div
             onDragOver={e => { e.preventDefault(); setDragging(true); }}
             onDragLeave={() => setDragging(false)}
             onDrop={handleDrop}
-            className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all ${
-              dragging ? "border-blue-500 bg-blue-500/5" : "border-gray-700 hover:border-gray-600 bg-gray-900"
+            className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all bg-white min-h-[220px] flex flex-col items-center justify-center ${
+              dragging ? "border-blue-600 bg-blue-50/60 shadow-md" : "border-slate-300 hover:border-blue-500 hover:bg-slate-50/80 shadow-xs"
             }`}
             onClick={() => document.getElementById("img-input")?.click()}
           >
-            <input id="img-input" type="file" className="hidden" accept="image/*"
-              onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])} />
+            <input
+              id="img-input"
+              type="file"
+              className="hidden"
+              accept="image/*"
+              onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])}
+            />
             {uploading ? (
               <div className="flex flex-col items-center gap-3">
-                <Loader size={32} className="text-blue-400 animate-spin" />
-                <p className="text-gray-300 text-sm">Analyzing medical image...</p>
+                <Loader size={36} className="text-blue-600 animate-spin" />
+                <p className="text-sm font-semibold text-slate-800">Processing Neural Feature Mapping...</p>
+                <p className="text-xs text-slate-500">Evaluating visual heatmaps and diagnostic patterns</p>
               </div>
             ) : (
               <>
-                <ScanLine size={36} className="text-gray-600 mx-auto mb-3" />
-                <p className="text-gray-300 text-sm font-medium mb-1">Upload {MODALITIES.find(m => m.key === modality)?.label}</p>
-                <p className="text-xs text-gray-600">JPG, PNG — Drag & drop or click to browse</p>
+                <div className="w-12 h-12 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center mb-3">
+                  <ScanLine size={22} className="text-purple-600" />
+                </div>
+                <p className="text-sm font-bold text-slate-900 mb-1">
+                  Upload {MODALITIES.find(m => m.key === modality)?.label}
+                </p>
+                <p className="text-xs text-slate-500">JPG, PNG DICOM exports — Drag & drop or click to browse</p>
               </>
             )}
           </div>
 
-          {error && (
-            <div className="flex items-center gap-2 text-red-400 text-sm bg-red-900/20 border border-red-500/20 rounded-lg px-3 py-2">
-              <AlertCircle size={13} /> {error}
-            </div>
-          )}
+          {error && <AlertBanner variant="error" message={error} dismissible />}
         </div>
 
-        {}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-          <h2 className="font-semibold text-white text-sm mb-4">Diagnostic Result</h2>
-          {result ? (
-            <div className="space-y-4">
-              <div className={`text-xl font-bold ${confColor}`}>{result.prediction}</div>
-              <div className="flex items-center gap-3">
-                <div className="flex-1 bg-gray-800 rounded-full h-2">
-                  <div
-                    className={`h-2 rounded-full ${result.confidence_score > 0.88 ? "bg-green-500" : result.confidence_score > 0.80 ? "bg-amber-500" : "bg-red-500"}`}
-                    style={{ width: `${result.confidence_score * 100}%` }}
-                  />
-                </div>
-                <span className={`text-sm font-bold ${confColor}`}>{(result.confidence_score * 100).toFixed(1)}%</span>
-              </div>
-              <div className="text-xs text-gray-500">Confidence Score</div>
+        {/* Diagnostic Findings Output */}
+        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+              <h2 className="font-bold text-slate-900 text-sm">Diagnostic Classification Output</h2>
+              {result && <Badge variant={confBadge} size="sm">Analysis Ready</Badge>}
+            </div>
 
-              <div>
-                <p className="text-xs text-gray-500 font-medium mb-2">Explainable AI Heatmap (XAI)</p>
-                <div className="bg-gray-800 rounded-lg p-3 inline-block">
+            {result ? (
+              <div className="space-y-4">
+                <div>
+                  <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Primary Classification</span>
+                  <div className="text-xl font-bold text-slate-900 mt-0.5">{result.prediction}</div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between text-xs mb-1">
+                    <span className="font-semibold text-slate-600">Model Confidence</span>
+                    <span className="font-bold text-slate-900">{(result.confidence_score * 100).toFixed(1)}%</span>
+                  </div>
+                  <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                    <div
+                      className={`h-2 rounded-full ${result.confidence_score > 0.88 ? "bg-emerald-500" : result.confidence_score > 0.80 ? "bg-amber-500" : "bg-red-500"}`}
+                      style={{ width: `${result.confidence_score * 100}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <Eye size={14} className="text-slate-500" /> Explainable AI Attention Grid (XAI)
+                  </p>
                   <HeatmapGrid grid={result.xai_heatmap_grid} />
+                  <p className="text-[11px] text-slate-500 mt-1.5">Darker red zones represent higher neural activation focus</p>
                 </div>
-                <p className="text-xs text-gray-600 mt-1">Red regions indicate higher AI attention zones</p>
-              </div>
 
-              <div className="bg-blue-900/10 border border-blue-500/20 rounded-lg p-3">
-                <p className="text-xs font-medium text-blue-400 mb-1">Clinical Guidance</p>
-                <p className="text-xs text-gray-300 leading-relaxed">{result.clinical_guidelines}</p>
+                <div className="bg-blue-50/70 border border-blue-200 rounded-lg p-3">
+                  <p className="text-xs font-bold text-blue-900 mb-1">Clinical Protocol</p>
+                  <p className="text-xs text-slate-800 leading-relaxed font-medium">{result.clinical_guidelines}</p>
+                </div>
               </div>
+            ) : (
+              <div className="py-16 text-center">
+                <ScanLine size={36} className="text-slate-300 mx-auto mb-2" />
+                <p className="text-xs text-slate-500 font-medium">Select a modality and upload a scan to generate AI diagnostics</p>
+              </div>
+            )}
+          </div>
 
-              <div className="bg-amber-900/10 border border-amber-500/20 rounded-lg p-3">
-                <p className="text-xs text-amber-400">⚠️ This AI analysis is for informational purposes only and does not replace clinical diagnosis by a licensed radiologist or physician.</p>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <ScanLine size={36} className="text-gray-700 mx-auto mb-2" />
-              <p className="text-sm text-gray-600">Upload an image to see AI diagnostic results</p>
-            </div>
-          )}
+          <div className="mt-4 pt-3 border-t border-slate-100">
+            <p className="text-[11px] text-slate-500 leading-normal">
+              ⚠️ Diagnostic AI outputs are designed as clinical decision support and require verification by a certified radiologist or physician.
+            </p>
+          </div>
         </div>
       </div>
 
-      {}
+      {/* Imaging History */}
       {history.length > 0 && (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-          <h2 className="font-semibold text-white text-sm mb-4">Imaging History ({history.length})</h2>
+        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs">
+          <h2 className="font-bold text-slate-900 text-sm mb-4">Diagnostic Scan Archive ({history.length})</h2>
           <div className="space-y-2">
             {[...history].reverse().map((img: any) => (
-              <div key={img.id} className="flex items-center gap-3 p-3 bg-gray-800/50 rounded-lg">
-                <ScanLine size={16} className="text-purple-400 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-white truncate">{img.filename}</p>
-                  <p className="text-xs text-gray-500">{img.modality?.toUpperCase()} · {img.date}</p>
+              <div key={img.id} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-lg hover:border-slate-300 transition-colors">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-8 h-8 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center flex-shrink-0">
+                    <ScanLine size={16} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-slate-900 truncate">{img.filename}</p>
+                    <p className="text-[11px] text-slate-500">{img.modality?.toUpperCase()} · {img.date}</p>
+                  </div>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <p className="text-sm font-medium text-white truncate max-w-40">{img.prediction}</p>
-                  <p className="text-xs text-gray-500">{(img.confidence_score * 100).toFixed(1)}% confidence</p>
+                  <span className="text-xs font-bold text-slate-900 block">{img.prediction}</span>
+                  <span className="text-[11px] text-slate-500">{(img.confidence_score * 100).toFixed(1)}% confidence</span>
                 </div>
               </div>
             ))}

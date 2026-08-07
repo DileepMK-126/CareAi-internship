@@ -26,7 +26,7 @@ export interface IAuthService {
   onAuthStateChanged(callback: (user: UserProfile | null) => void): () => void;
   login(email: string, password: string): Promise<UserProfile>;
   register(name: string, email: string, password: string, role: string): Promise<UserProfile>;
-  loginWithGoogle(): Promise<UserProfile>;
+  loginWithGoogle(email?: string, name?: string): Promise<UserProfile>;
   logout(): Promise<void>;
 }
 
@@ -41,8 +41,11 @@ const firebaseConfig = {
 
 const hasFirebaseConfig = Boolean(
   firebaseConfig.apiKey &&
+  !firebaseConfig.apiKey.includes("your-") &&
   firebaseConfig.authDomain &&
-  firebaseConfig.projectId
+  !firebaseConfig.authDomain.includes("your-") &&
+  firebaseConfig.projectId &&
+  !firebaseConfig.projectId.includes("your-")
 );
 
 let app: any = null;
@@ -133,11 +136,40 @@ class LocalAuthService implements IAuthService {
     return userProfile;
   }
 
-  async loginWithGoogle(): Promise<UserProfile> {
+  async loginWithGoogle(customEmail?: string, customName?: string): Promise<UserProfile> {
+    const existingUsersRaw = localStorage.getItem("careai_users");
+    let storedName = customName;
+    let storedEmail = customEmail;
+
+    if (!storedEmail && existingUsersRaw) {
+      try {
+        const users = JSON.parse(existingUsersRaw);
+        if (users.length > 0) {
+          storedEmail = users[0].email;
+          storedName = users[0].name;
+        }
+      } catch (e) { }
+    }
+
+    if (!storedEmail || !storedName) {
+      const inputEmail = window.prompt(
+        "Enter your Google Account email address to sign in:",
+        "dileep@careai.health"
+      );
+      if (inputEmail && inputEmail.trim()) {
+        storedEmail = inputEmail.trim();
+        const namePart = storedEmail.split("@")[0].replace(/[._]/g, " ");
+        storedName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
+      } else {
+        storedEmail = "dileep@careai.health";
+        storedName = "Dileep M K";
+      }
+    }
+
     const googleUser: UserProfile = {
       id: "google_" + Math.random().toString(36).substring(2, 9),
-      name: "Google User",
-      email: "user.google@careai.health",
+      name: storedName,
+      email: storedEmail,
       role: "patient",
     };
     localStorage.setItem("careai_user", JSON.stringify(googleUser));
@@ -200,6 +232,41 @@ async function fetchUserProfile(uid: string, defaultEmail: string, defaultName: 
   return defaultProfile;
 }
 
+export function formatAuthError(err: any): string {
+  if (!err) return "An unexpected authentication error occurred.";
+  const code = err.code || "";
+  const msg = err.message || String(err);
+
+  if (code === "auth/invalid-credential" || code === "auth/user-not-found" || code === "auth/wrong-password") {
+    return "Invalid email or password. Please check your credentials and try again.";
+  }
+  if (code === "auth/email-already-in-use") {
+    return "This email address is already registered. Please sign in instead.";
+  }
+  if (code === "auth/invalid-email") {
+    return "Please enter a valid email address.";
+  }
+  if (code === "auth/weak-password") {
+    return "Password is too weak. Please use at least 6 characters.";
+  }
+  if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") {
+    return "Sign-in cancelled. Please complete account selection to sign in.";
+  }
+  if (code === "auth/popup-blocked") {
+    return "Pop-up blocked by browser. Please allow pop-ups for this website and try again.";
+  }
+  if (code === "auth/network-request-failed") {
+    return "Network connection issue. Please check your internet connection.";
+  }
+  if (code === "auth/too-many-requests") {
+    return "Too many failed attempts. Please wait a moment and try again.";
+  }
+  if (msg.includes("Invalid email or password") || msg.includes("Email already registered")) {
+    return msg;
+  }
+  return msg.replace(/^Firebase:\s*/, "").replace(/\s*\(auth\/.*\)\.?$/, "");
+}
+
 class FirebaseAuthService implements IAuthService {
   private localFallback = new LocalAuthService();
   private currentUserCache: UserProfile | null = null;
@@ -217,6 +284,32 @@ class FirebaseAuthService implements IAuthService {
     }
   }
 
+  private syncLocalUser(profile: UserProfile, password?: string) {
+    try {
+      const usersRaw = localStorage.getItem("careai_users") || "[]";
+      const users = JSON.parse(usersRaw);
+      const existingIdx = users.findIndex((u: any) => u.email === profile.email);
+      if (existingIdx >= 0) {
+        users[existingIdx] = {
+          ...users[existingIdx],
+          id: profile.id,
+          name: profile.name,
+          role: profile.role,
+          ...(password ? { password } : {}),
+        };
+      } else {
+        users.push({
+          id: profile.id,
+          name: profile.name,
+          email: profile.email,
+          role: profile.role,
+          password: password || "oauth_managed",
+        });
+      }
+      localStorage.setItem("careai_users", JSON.stringify(users));
+    } catch (e) { }
+  }
+
   getCurrentUser(): UserProfile | null {
     if (this.currentUserCache) return this.currentUserCache;
     return this.localFallback.getCurrentUser();
@@ -231,7 +324,7 @@ class FirebaseAuthService implements IAuthService {
     this.isFirebaseListenerInitialized = true;
 
     onFirebaseAuthStateChanged(auth, async (fbUser: FirebaseUser | null) => {
-      console.log(`[Auth Audit] 6. onAuthStateChanged fired timestamp=${performance.now().toFixed(2)}ms uid=${fbUser ? fbUser.uid : null}`);
+      console.log(`[Auth Audit] onAuthStateChanged fired uid=${fbUser ? fbUser.uid : null}`);
       if (fbUser) {
         const defaultName = fbUser.displayName || fbUser.email?.split("@")[0] || "Google User";
         const defaultEmail = fbUser.email || "";
@@ -250,10 +343,12 @@ class FirebaseAuthService implements IAuthService {
             if (parsed.id === fbUser.uid) {
               initialProfile = parsed;
             }
-          } catch (e) {}
+          } catch (e) { }
         }
 
         this.currentUserCache = initialProfile;
+        this.syncLocalUser(initialProfile);
+        localStorage.setItem("careai_user", JSON.stringify(initialProfile));
         this.notifyListeners(initialProfile);
 
         try {
@@ -271,6 +366,15 @@ class FirebaseAuthService implements IAuthService {
           console.warn("Background auth profile refresh skipped:", e);
         }
       } else {
+        const savedLocalUser = localStorage.getItem("careai_user");
+        if (savedLocalUser) {
+          try {
+            const parsed = JSON.parse(savedLocalUser);
+            this.currentUserCache = parsed;
+            this.notifyListeners(parsed);
+            return;
+          } catch (e) { }
+        }
         this.currentUserCache = null;
         localStorage.removeItem("careai_user");
         this.notifyListeners(null);
@@ -311,6 +415,7 @@ class FirebaseAuthService implements IAuthService {
         role: "patient",
       };
 
+      this.syncLocalUser(profile, password);
       this.currentUserCache = profile;
       localStorage.setItem("careai_user", JSON.stringify(profile));
       this.notifyListeners(profile);
@@ -332,8 +437,12 @@ class FirebaseAuthService implements IAuthService {
 
       return profile;
     } catch (err: any) {
-      console.warn("Firebase Auth login failed, falling back to local:", err.message);
-      return this.localFallback.login(email, password);
+      console.warn("Firebase Auth login failed, attempting local fallback:", err.code || err.message);
+      try {
+        return await this.localFallback.login(email, password);
+      } catch (fallbackErr: any) {
+        throw new Error(formatAuthError(err));
+      }
     }
   }
 
@@ -351,20 +460,16 @@ class FirebaseAuthService implements IAuthService {
         role: role || "patient",
       };
 
+      this.syncLocalUser(profile, password);
+
       if (db) {
-        (async () => {
-          try {
-            await setDoc(doc(db, "users", fbUser.uid), {
-              id: fbUser.uid,
-              name,
-              email,
-              role: role || "patient",
-              createdAt: new Date().toISOString(),
-            });
-          } catch (e) {
-            console.warn("Background Firestore registration write failed:", e);
-          }
-        })();
+        setDoc(doc(db, "users", fbUser.uid), {
+          id: fbUser.uid,
+          name,
+          email,
+          role: role || "patient",
+          createdAt: new Date().toISOString(),
+        }).catch(e => console.warn("Background Firestore registration write failed:", e));
       }
 
       this.currentUserCache = profile;
@@ -372,13 +477,17 @@ class FirebaseAuthService implements IAuthService {
       this.notifyListeners(profile);
       return profile;
     } catch (err: any) {
-      console.warn("Firebase Auth registration failed, falling back to local:", err.message);
-      return this.localFallback.register(name, email, password, role);
+      console.warn("Firebase Auth registration failed, attempting local fallback:", err.code || err.message);
+      try {
+        return await this.localFallback.register(name, email, password, role);
+      } catch (fallbackErr: any) {
+        throw new Error(formatAuthError(err));
+      }
     }
   }
 
-  async loginWithGoogle(): Promise<UserProfile> {
-    if (!auth) return this.localFallback.loginWithGoogle();
+  async loginWithGoogle(customEmail?: string, customName?: string): Promise<UserProfile> {
+    if (!auth) return this.localFallback.loginWithGoogle(customEmail, customName);
 
     try {
       const provider = new GoogleAuthProvider();
@@ -386,18 +495,10 @@ class FirebaseAuthService implements IAuthService {
       provider.addScope("email");
       provider.setCustomParameters({ prompt: "select_account" });
 
-      console.log(`[Auth Audit] 2. Popup opened timestamp=${performance.now().toFixed(2)}ms`);
-
-      // Await popup completion so navigation to Dashboard occurs strictly after account selection & popup closure
       const userCredential = await signInWithPopup(auth, provider);
-
-      console.log(`[Auth Audit] 3. Popup closed / auth state detected timestamp=${performance.now().toFixed(2)}ms`);
-      console.log(`[Auth Audit] 4. Credential received timestamp=${performance.now().toFixed(2)}ms`);
-      console.log(`[Auth Audit] 5. Firebase authenticated timestamp=${performance.now().toFixed(2)}ms uid=${userCredential.user.uid}`);
-
       const fbUser = userCredential.user;
-      const defaultName = fbUser.displayName || fbUser.email?.split("@")[0] || "Google User";
-      const defaultEmail = fbUser.email || "";
+      const defaultName = fbUser.displayName || customName || fbUser.email?.split("@")[0] || "Google Account User";
+      const defaultEmail = fbUser.email || customEmail || "";
 
       const profile: UserProfile = {
         id: fbUser.uid,
@@ -406,42 +507,28 @@ class FirebaseAuthService implements IAuthService {
         role: "patient",
       };
 
+      this.syncLocalUser(profile);
       this.currentUserCache = profile;
       localStorage.setItem("careai_user", JSON.stringify(profile));
-      console.log(`[Auth Audit] 7. User available timestamp=${performance.now().toFixed(2)}ms name=${profile.name}`);
       this.notifyListeners(profile);
 
-      // Async background Firestore profile sync
       if (db) {
-        (async () => {
-          try {
-            const docRef = doc(db, "users", fbUser.uid);
-            const userDoc = await getDocFromCache(docRef).catch(() => null);
-            if (!userDoc || !userDoc.exists()) {
-              const serverDoc = await getDoc(docRef).catch(() => null);
-              if (!serverDoc || !serverDoc.exists()) {
-                await setDoc(docRef, {
-                  id: fbUser.uid,
-                  name: defaultName,
-                  email: defaultEmail,
-                  role: "patient",
-                  createdAt: new Date().toISOString(),
-                });
-              }
-            }
-          } catch (e) {
-            console.warn("Background Google profile creation skipped:", e);
-          }
-        })();
+        setDoc(doc(db, "users", fbUser.uid), {
+          id: fbUser.uid,
+          name: defaultName,
+          email: defaultEmail,
+          role: "patient",
+          createdAt: new Date().toISOString(),
+        }).catch(e => console.warn("Background Google profile creation skipped:", e));
       }
 
       return profile;
     } catch (err: any) {
       if (err.code === "auth/popup-closed-by-user" || err.code === "auth/cancelled-popup-request") {
-        throw new Error("Sign-in cancelled. Please select an account to sign in.");
+        throw new Error(formatAuthError(err));
       }
-      console.warn("Firebase Google Sign-In failed:", err.code, err.message);
-      throw new Error(err.message || "Google Sign-In failed. Please try again.");
+      console.warn("Firebase Google Sign-In failed, falling back to local sign-in:", err.code || err.message);
+      return this.localFallback.loginWithGoogle(customEmail, customName);
     }
   }
 

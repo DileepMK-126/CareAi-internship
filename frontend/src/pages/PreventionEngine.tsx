@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { api } from "../api";
-import { Shield, Loader, ChevronDown, ChevronUp, AlertTriangle, CheckCircle, Info } from "lucide-react";
+import { Shield, Loader, ChevronDown, ChevronUp, AlertTriangle, CheckCircle } from "lucide-react";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Badge } from "../components/ui/Badge";
+import { AlertBanner } from "../components/ui/AlertBanner";
 
-const FACTOR_STATUS: Record<string, string> = {
-  critical: "bg-red-500/10 border-red-500/30 text-red-400",
-  warning:  "bg-amber-500/10 border-amber-500/30 text-amber-400",
-  info:     "bg-blue-500/10 border-blue-500/30 text-blue-400",
+const FACTOR_STATUS: Record<string, "danger" | "warning" | "info"> = {
+  critical: "danger",
+  warning:  "warning",
+  info:     "info",
 };
 
 export default function PreventionEngine() {
@@ -29,166 +32,191 @@ export default function PreventionEngine() {
     try {
       const res = await api.preventionEngine(form);
       setResult(res.result || res);
-    } catch (e: any) { setError(e.message); }
+    } catch (e: any) { setError(e.message || "Prevention analysis failed"); }
     finally { setLoading(false); }
   };
 
   const SLIDERS = [
-    { k: "age",              l: "Age",                  min: 18, max: 90,  step: 1,   unit: "years" },
-    { k: "bmi",              l: "BMI",                  min: 16, max: 50,  step: 0.1, unit: "kg/m²" },
+    { k: "age",              l: "Age",                  min: 18, max: 90,  step: 1,   unit: "yrs" },
+    { k: "bmi",              l: "Body Mass Index (BMI)",min: 16, max: 50,  step: 0.1, unit: "kg/m²" },
     { k: "glucose",          l: "Fasting Glucose",      min: 60, max: 300, step: 1,   unit: "mg/dL" },
-    { k: "hba1c",            l: "HbA1c",                min: 4,  max: 13,  step: 0.1, unit: "%" },
-    { k: "systolic_bp",      l: "Systolic BP",          min: 90, max: 200, step: 1,   unit: "mmHg" },
+    { k: "hba1c",            l: "Glycated Hemoglobin",  min: 4,  max: 13,  step: 0.1, unit: "%" },
+    { k: "systolic_bp",      l: "Systolic Blood Pressure",min: 90, max: 200, step: 1, unit: "mmHg" },
     { k: "total_cholesterol",l: "Total Cholesterol",    min: 100,max: 400, step: 1,   unit: "mg/dL" },
     { k: "ldl",              l: "LDL Cholesterol",      min: 50, max: 300, step: 1,   unit: "mg/dL" },
     { k: "hdl",              l: "HDL Cholesterol",      min: 20, max: 100, step: 1,   unit: "mg/dL" },
-    { k: "egfr",             l: "eGFR (Kidney)",        min: 10, max: 150, step: 1,   unit: "mL/min" },
-    { k: "alt",              l: "ALT (Liver)",           min: 5,  max: 200, step: 1,   unit: "U/L" },
-    { k: "alcohol_units_week",l:"Alcohol Units/Week",   min: 0,  max: 50,  step: 1,   unit: "units" },
+    { k: "egfr",             l: "eGFR (Kidney Function)",min: 10, max: 150, step: 1,  unit: "mL/min" },
+    { k: "alt",              l: "ALT (Liver Enzyme)",    min: 5,  max: 200, step: 1,   unit: "U/L" },
+    { k: "alcohol_units_week",l:"Weekly Alcohol Intake",min: 0,  max: 50,  step: 1,   unit: "units" },
   ];
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-600 to-teal-600 flex items-center justify-center">
-          <Shield size={20} className="text-white" />
-        </div>
-        <div>
-          <h1 className="text-xl font-bold text-white">Disease Prevention Engine</h1>
-          <p className="text-sm text-gray-500">Early risk detection and preventive 12-month health trajectory modeling</p>
-        </div>
-      </div>
+    <div className="p-6 max-w-7xl mx-auto space-y-6">
+      <PageHeader
+        title="Predictive Disease Prevention & Monitoring Engine"
+        subtitle="12-month longitudinal disease trajectory modeling and modifiable risk factor reduction"
+        icon={Shield}
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 space-y-4 max-h-[85vh] overflow-y-auto">
-          <h2 className="text-white font-semibold text-sm sticky top-0 bg-gray-900 pb-2">Health Metrics</h2>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Metrics Form */}
+        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4 max-h-[82vh] overflow-y-auto">
+          <h2 className="text-slate-900 font-bold text-sm sticky top-0 bg-white pb-2 border-b border-slate-100">Patient Biometric Metrics</h2>
           {SLIDERS.map(({ k, l, min, max, step, unit }) => (
-            <div key={k}>
-              <div className="flex justify-between mb-1">
-                <label className="text-xs text-gray-500">{l}</label>
-                <span className="text-xs text-green-400 font-medium">{(form as any)[k]} {unit}</span>
+            <div key={k} className="space-y-1">
+              <div className="flex justify-between items-center text-xs">
+                <label className="font-semibold text-slate-700">{l}</label>
+                <span className="font-mono font-bold text-blue-700">{(form as any)[k]} {unit}</span>
               </div>
-              <input type="range" min={min} max={max} step={step}
+              <input
+                type="range" min={min} max={max} step={step}
                 value={(form as any)[k]}
                 onChange={e => set(k, parseFloat(e.target.value))}
-                className="w-full accent-green-500 cursor-pointer" />
+                className="w-full accent-blue-600 cursor-pointer"
+              />
             </div>
           ))}
-          <div>
-            <label className="text-xs text-gray-500 mb-2 block">Exercise Days / Week</label>
+
+          <div className="pt-2 border-t border-slate-100">
+            <label className="text-xs font-bold text-slate-700 mb-2 block">Weekly Exercise Frequency (Days)</label>
             <div className="flex gap-1.5 flex-wrap">
               {[0,1,2,3,4,5,6,7].map(d => (
-                <button key={d} onClick={() => set("exercise_days_per_week", d)}
-                  className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${form.exercise_days_per_week === d ? "bg-green-600 text-white" : "bg-gray-800 text-gray-500"}`}>
+                <button
+                  key={d}
+                  onClick={() => set("exercise_days_per_week", d)}
+                  className={`w-7 h-7 rounded-md text-xs font-bold transition-all ${
+                    form.exercise_days_per_week === d
+                      ? "bg-blue-600 text-white shadow-2xs"
+                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  }`}
+                >
                   {d}
                 </button>
               ))}
             </div>
           </div>
-          <div className="space-y-2">
+
+          <div className="space-y-2 pt-2 border-t border-slate-100">
             {[
-              { k: "smoking",               l: "Smoker" },
-              { k: "family_diabetes",       l: "Family: Diabetes",      fh: true, fhk: "diabetes" },
-              { k: "family_heart_disease",  l: "Family: Heart Disease", fh: true, fhk: "heart_disease" },
+              { k: "smoking",               l: "Current Tobacco Smoker" },
+              { k: "family_diabetes",       l: "Family History: Type 2 Diabetes", fh: true, fhk: "diabetes" },
+              { k: "family_heart_disease",  l: "Family History: Cardiovascular Disease", fh: true, fhk: "heart_disease" },
             ].map(({ k, l, fh, fhk }) => (
               <label key={k} className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox"
+                <input
+                  type="checkbox"
                   checked={fh ? (form.family_history as any)[fhk!] : (form as any)[k]}
                   onChange={e => fh ? setFH(fhk!, e.target.checked) : set(k, e.target.checked)}
-                  className="w-4 h-4 accent-green-500" />
-                <span className="text-xs text-gray-400">{l}</span>
+                  className="w-4 h-4 accent-blue-600 rounded"
+                />
+                <span className="text-xs font-medium text-slate-700">{l}</span>
               </label>
             ))}
           </div>
-          <button onClick={handleAnalyze} disabled={loading}
-            className="w-full py-2.5 bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-500 hover:to-teal-500 disabled:opacity-50 text-white rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all">
-            {loading ? <><Loader size={14} className="animate-spin" /> Analyzing...</> : "Run Prevention Engine →"}
+
+          <button
+            onClick={handleAnalyze}
+            disabled={loading}
+            className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-xs"
+          >
+            {loading ? <><Loader size={14} className="animate-spin" /> Modeling Risk Trajectory...</> : "Execute Prevention Engine →"}
           </button>
-          {error && <p className="text-red-400 text-xs">{error}</p>}
+
+          {error && <AlertBanner variant="error" message={error} />}
         </div>
 
-        {}
+        {/* Right Output Panel */}
         <div className="lg:col-span-2 space-y-4">
           {result ? (
             <>
-              {}
-              <div className="bg-gradient-to-r from-gray-900 to-green-900/20 border border-green-500/20 rounded-2xl p-5 flex items-center justify-between">
+              {/* Score Header */}
+              <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <p className="text-gray-400 text-sm mb-1">Overall Prevention Score</p>
-                  <div className="text-4xl font-black text-white">{result.overall_prevention_score}<span className="text-lg text-gray-500">/100</span></div>
-                  <p className="text-xs text-gray-500 mt-1">Higher = better prevention status</p>
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Overall Prevention Health Score</p>
+                  <div className="text-4xl font-extrabold text-slate-900">
+                    {result.overall_prevention_score}<span className="text-sm font-normal text-slate-400">/100</span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1 font-medium">Higher score indicates lower risk profile</p>
                 </div>
-                <div className="text-right">
-                  <p className="text-xs text-gray-500 mb-1">Top Risk</p>
-                  <p className="text-sm font-bold text-red-400">{result.top_risk}</p>
-                  <p className="text-xs text-gray-600 mt-2">Modifiable risks: {result.xai_summary?.modifiable_risk_count}</p>
+                <div className="sm:text-right border-t sm:border-t-0 sm:border-l border-slate-100 pt-3 sm:pt-0 sm:pl-6">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Primary Identified Risk</p>
+                  <Badge variant="danger" size="md">{result.top_risk}</Badge>
+                  <p className="text-xs text-slate-500 mt-2 font-medium">Modifiable risk factors: {result.xai_summary?.modifiable_risk_count}</p>
                 </div>
               </div>
 
-              {}
-              <div className="bg-gray-900 border border-amber-500/20 rounded-2xl p-4">
-                <h3 className="text-amber-400 text-sm font-semibold mb-2 flex items-center gap-2"><AlertTriangle size={14} /> Immediate Actions Required</h3>
-                <ul className="space-y-1.5">
-                  {(result.xai_summary?.immediate_actions || []).map((a: string, i: number) => (
-                    <li key={i} className="text-xs text-gray-300 flex items-start gap-2">
-                      <span className="text-amber-400 font-bold mt-0.5">{i+1}.</span> {a}
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              {/* Immediate Actions */}
+              {(result.xai_summary?.immediate_actions || []).length > 0 && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 shadow-xs space-y-2">
+                  <h3 className="text-xs font-bold text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
+                    <AlertTriangle size={15} className="text-amber-600" /> Immediate Preventive Directives
+                  </h3>
+                  <div className="space-y-1">
+                    {result.xai_summary.immediate_actions.map((a: string, i: number) => (
+                      <div key={i} className="text-xs text-amber-900 flex items-start gap-2 font-medium">
+                        <span className="font-bold text-amber-700">{i+1}.</span>
+                        <span>{a}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-              {}
+              {/* Disease Breakdown */}
               {(result.diseases || []).map((d: any) => (
-                <div key={d.disease} className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
-                  <button onClick={() => setExpanded(expanded === d.disease ? null : d.disease)}
-                    className="w-full p-4 flex items-center justify-between hover:bg-gray-800/40 transition-colors">
+                <div key={d.disease} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+                  <button
+                    onClick={() => setExpanded(expanded === d.disease ? null : d.disease)}
+                    className="w-full p-4 flex items-center justify-between hover:bg-slate-50 transition-colors text-left"
+                  >
                     <div className="flex items-center gap-3">
-                      <span className="text-xl">{d.icon}</span>
-                      <div className="text-left">
-                        <p className="text-white font-semibold text-sm">{d.disease}</p>
-                        <p className="text-xs text-gray-500">{d.stage}</p>
+                      <span className="text-2xl">{d.icon}</span>
+                      <div>
+                        <p className="text-slate-900 font-bold text-sm">{d.disease}</p>
+                        <p className="text-xs text-slate-500 font-medium">{d.stage}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      {}
-                      <div className="w-32 h-2 bg-gray-800 rounded-full overflow-hidden">
-                        <div className="h-full rounded-full transition-all duration-700"
-                          style={{ width: `${d.risk_percent}%`, backgroundColor: d.color }} />
+                    <div className="flex items-center gap-4">
+                      <div className="w-28 sm:w-36 bg-slate-100 rounded-full h-2 overflow-hidden">
+                        <div
+                          className="h-2 rounded-full transition-all duration-500"
+                          style={{ width: `${d.risk_percent}%`, backgroundColor: d.color }}
+                        />
                       </div>
-                      <span className="text-sm font-bold w-12 text-right" style={{ color: d.color }}>{d.risk_percent}%</span>
-                      <span className="text-xs text-gray-600">{d.confidence}% conf.</span>
-                      {expanded === d.disease ? <ChevronUp size={14} className="text-gray-500" /> : <ChevronDown size={14} className="text-gray-500" />}
+                      <span className="text-xs font-extrabold w-10 text-right" style={{ color: d.color }}>{d.risk_percent}%</span>
+                      {expanded === d.disease ? <ChevronUp size={16} className="text-slate-500" /> : <ChevronDown size={16} className="text-slate-500" />}
                     </div>
                   </button>
 
                   {expanded === d.disease && (
-                    <div className="px-4 pb-4 space-y-3">
-                      {}
+                    <div className="p-4 bg-slate-50/60 border-t border-slate-100 space-y-3">
                       <div>
-                        <p className="text-xs text-gray-500 font-semibold mb-2">Contributing Factors</p>
+                        <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Contributing Risk Factors</p>
                         <div className="space-y-1.5">
                           {(d.contributing_factors || []).map((f: any, i: number) => (
-                            <div key={i} className={`flex items-center justify-between px-3 py-1.5 rounded-lg border text-xs ${FACTOR_STATUS[f.status]}`}>
-                              <span>{f.factor}</span>
-                              <span className="font-bold ml-2">+{f.weight}</span>
+                            <div key={i} className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs">
+                              <span className="font-medium text-slate-800">{f.factor}</span>
+                              <Badge variant={FACTOR_STATUS[f.status] || "neutral"} size="sm">+{f.weight} Weight</Badge>
                             </div>
                           ))}
                           {d.contributing_factors.length === 0 && (
-                            <p className="text-xs text-gray-600 flex items-center gap-1"><CheckCircle size={12} className="text-green-500" /> No significant risk factors detected</p>
+                            <p className="text-xs text-emerald-700 flex items-center gap-1.5 font-semibold">
+                              <CheckCircle size={13} /> No elevated risk factors identified
+                            </p>
                           )}
                         </div>
                       </div>
-                      {}
+
                       <div>
-                        <p className="text-xs text-gray-500 font-semibold mb-2">Preventive Actions</p>
-                        <ul className="space-y-1">
+                        <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Targeted Preventive Actions</p>
+                        <div className="space-y-1.5">
                           {(d.preventive_actions || []).map((a: string, i: number) => (
-                            <li key={i} className="text-xs text-gray-300 flex items-start gap-2">
-                              <CheckCircle size={11} className="text-green-500 flex-shrink-0 mt-0.5" /> {a}
-                            </li>
+                            <div key={i} className="text-xs text-slate-800 bg-white border border-slate-200 rounded-lg p-2.5 flex items-start gap-2 font-medium">
+                              <CheckCircle size={13} className="text-emerald-600 mt-0.5 flex-shrink-0" />
+                              <span>{a}</span>
+                            </div>
                           ))}
-                        </ul>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -196,10 +224,10 @@ export default function PreventionEngine() {
               ))}
             </>
           ) : (
-            <div className="bg-gray-900 border border-gray-800 border-dashed rounded-2xl flex flex-col items-center justify-center py-24 gap-3">
-              <Shield size={48} className="text-gray-700" />
-              <p className="text-gray-600">Configure your health metrics and run the prevention engine</p>
-              <p className="text-gray-700 text-xs">5 diseases · Explainable AI · Preventive action plans</p>
+            <div className="bg-white border border-slate-200 border-dashed rounded-xl flex flex-col items-center justify-center py-24 px-4 text-center">
+              <Shield size={40} className="text-slate-300 mb-2" />
+              <p className="text-xs font-semibold text-slate-700">Configure health metrics and click Execute Prevention Engine</p>
+              <p className="text-[11px] text-slate-500 mt-1">Calculates 5-disease risk trajectory models with actionable preventive protocols</p>
             </div>
           )}
         </div>

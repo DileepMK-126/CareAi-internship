@@ -4,6 +4,8 @@ import "leaflet/dist/leaflet.css";
 import {
   MapPin, Hospital, Pill, Activity, Search, Clock, ExternalLink, RefreshCw, Building2
 } from "lucide-react";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Badge } from "../components/ui/Badge";
 
 function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371;
@@ -202,7 +204,7 @@ export default function HealthcareFinder() {
     const centerIcon = L.divIcon({
       className: "custom-center-pin",
       html: `<div class="relative flex items-center justify-center">
-              <div class="w-6 h-6 rounded-full bg-blue-600 border-2 border-white shadow-xl flex items-center justify-center text-white text-[10px] font-bold">📍</div>
+              <div class="w-7 h-7 rounded-full bg-blue-600 border-2 border-white shadow-md flex items-center justify-center text-white text-[11px] font-bold">📍</div>
              </div>`,
       iconSize: [28, 28],
       iconAnchor: [14, 14],
@@ -222,12 +224,12 @@ export default function HealthcareFinder() {
       const isHospital = fac.type === "hospital";
       const isPharmacy = fac.type === "pharmacy";
 
-      const bgColor = isHospital ? "#ef4444" : isPharmacy ? "#10b981" : "#8b5cf6";
+      const bgColor = isHospital ? "#dc2626" : isPharmacy ? "#16a34a" : "#9333ea";
       const iconLetter = isHospital ? "🏥" : isPharmacy ? "💊" : "🔬";
 
       const facIcon = L.divIcon({
         className: "custom-fac-pin",
-        html: `<div style="background-color: ${bgColor}; border: 2px solid white; border-radius: 9999px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);">
+        html: `<div style="background-color: ${bgColor}; border: 2px solid white; border-radius: 9999px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
                 ${iconLetter}
                </div>`,
         iconSize: [32, 32],
@@ -239,12 +241,12 @@ export default function HealthcareFinder() {
       const marker = L.marker([fac.lat, fac.lon], { icon: facIcon }).addTo(map);
 
       const popupHtml = `
-        <div style="font-family: sans-serif; min-width: 180px;">
-          <h4 style="margin: 0 0 4px; font-weight: bold; color: #111827; font-size: 14px;">${fac.name}</h4>
-          <p style="margin: 0 0 4px; font-size: 12px; color: #4b5563;">${fac.address}</p>
+        <div style="font-family: Inter, sans-serif; min-width: 180px;">
+          <h4 style="margin: 0 0 4px; font-weight: bold; color: #0f172a; font-size: 13px;">${fac.name}</h4>
+          <p style="margin: 0 0 4px; font-size: 11px; color: #475569;">${fac.address}</p>
           <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 6px; font-size: 11px;">
             <span style="font-weight: 600; color: #2563eb;">${dist} km from center</span>
-            ${fac.open247 ? '<span style="color: #059669; font-weight: bold;">• Open 24/7</span>' : ''}
+            ${fac.open247 ? '<span style="color: #16a34a; font-weight: bold;">• Open 24/7</span>' : ''}
           </div>
           <a href="https://www.google.com/maps/dir/?api=1&destination=${fac.lat},${fac.lon}" target="_blank" rel="noopener noreferrer" style="display: block; margin-top: 8px; text-align: center; background: #2563eb; color: white; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-size: 11px; font-weight: bold;">
             Get Directions ➔
@@ -275,57 +277,50 @@ export default function HealthcareFinder() {
     .sort((a, b) => (a.distanceKm || 0) - (b.distanceKm || 0));
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-          Healthcare Location Finder
-          <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-semibold">
-            OpenStreetMap + Leaflet
-          </span>
-        </h1>
-        <p className="text-gray-400 text-sm mt-1">
-          Search any city, area, or pincode to locate nearby Hospitals, Pharmacies, and Diagnostic Labs.
-        </p>
-      </div>
+    <div className="p-6 max-w-7xl mx-auto space-y-6">
+      <PageHeader
+        title="Healthcare Locator & Care Facilities Map"
+        subtitle="Locate accredited hospitals, 24/7 pharmacies, and diagnostic laboratories with live OpenStreetMap data"
+        icon={MapPin}
+      />
 
-      {/* Manual Search Bar */}
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 space-y-3">
+      {/* Location Search Bar */}
+      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
         <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row items-center gap-3">
           <div className="relative flex-1 w-full">
-            <Search size={18} className="absolute left-3.5 top-3.5 text-gray-500" />
+            <Search size={16} className="absolute left-3.5 top-3 text-slate-400" />
             <input
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Type city name, area, or pincode (e.g. Bandra, Connaught Place, Bangalore, 560001)..."
-              className="w-full bg-gray-950 border border-gray-700 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors"
+              placeholder="Search city, district, or pincode (e.g. Bandra, Connaught Place, Bangalore, 560001)..."
+              className="w-full bg-white border border-slate-300 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-500/10 font-medium transition-all"
             />
           </div>
 
           <button
             type="submit"
             disabled={searching}
-            className="w-full sm:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-semibold transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 whitespace-nowrap"
+            className="w-full sm:w-auto px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2 whitespace-nowrap"
           >
-            {searching ? <RefreshCw size={16} className="animate-spin" /> : <Search size={16} />}
-            Search Location
+            {searching ? <RefreshCw size={14} className="animate-spin" /> : <Search size={14} />}
+            Search Facilities
           </button>
         </form>
 
-        {/* Quick Select Popular Cities */}
+        {/* Quick Cities */}
         <div className="flex items-center gap-2 overflow-x-auto pt-1">
-          <span className="text-xs text-gray-500 font-medium whitespace-nowrap flex items-center gap-1">
-            <Building2 size={12} /> Popular Cities:
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap flex items-center gap-1">
+            <Building2 size={13} /> Metro Centers:
           </span>
           {POPULAR_CITIES.map((c) => (
             <button
               key={c.name}
               onClick={() => selectQuickCity(c)}
-              className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
+              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all whitespace-nowrap border ${
                 activeCityName.toLowerCase().includes(c.name.toLowerCase())
-                  ? "bg-blue-600 text-white font-bold"
-                  : "bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white"
+                  ? "bg-blue-600 border-blue-700 text-white shadow-2xs"
+                  : "bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200"
               }`}
             >
               {c.name}
@@ -334,26 +329,13 @@ export default function HealthcareFinder() {
         </div>
       </div>
 
-      {/* Active Focus City Banner */}
-      <div className="flex items-center justify-between bg-gray-900/60 border border-gray-800 rounded-xl px-4 py-2 text-xs">
-        <div className="flex items-center gap-2">
-          <MapPin size={14} className="text-blue-400" />
-          <span className="text-gray-400">Current Search Focus:</span>
-          <span className="text-white font-bold">{activeCityName}</span>
-        </div>
-
-        <span className="text-gray-400 text-xs">
-          Coordinates: {activeCoords.lat.toFixed(4)}, {activeCoords.lon.toFixed(4)}
-        </span>
-      </div>
-
-      {/* Category Filters */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 border-b border-gray-800">
+      {/* Category Tabs */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 border-b border-slate-200">
         {[
-          { id: "all", label: "All Facilities", icon: Activity, color: "text-blue-400" },
-          { id: "hospital", label: "Hospitals & Emergency", icon: Hospital, color: "text-red-400" },
-          { id: "pharmacy", label: "Pharmacies & Meds", icon: Pill, color: "text-emerald-400" },
-          { id: "lab", label: "Diagnostic Labs", icon: Activity, color: "text-purple-400" },
+          { id: "all", label: "All Facilities", icon: Activity, badge: "neutral" },
+          { id: "hospital", label: "Hospitals & Emergency", icon: Hospital, badge: "danger" },
+          { id: "pharmacy", label: "Pharmacies & Meds", icon: Pill, badge: "success" },
+          { id: "lab", label: "Diagnostic Labs", icon: Activity, badge: "info" },
         ].map((tab) => {
           const Icon = tab.icon;
           const isActive = selectedType === tab.id;
@@ -361,13 +343,13 @@ export default function HealthcareFinder() {
             <button
               key={tab.id}
               onClick={() => setSelectedType(tab.id as any)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-xs transition-all whitespace-nowrap ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap border ${
                 isActive
-                  ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
-                  : "bg-gray-900 text-gray-400 hover:bg-gray-800 hover:text-white border border-gray-800"
+                  ? "bg-blue-600 border-blue-700 text-white shadow-2xs"
+                  : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
               }`}
             >
-              <Icon size={14} className={isActive ? "text-white" : tab.color} />
+              <Icon size={14} />
               {tab.label}
             </button>
           );
@@ -375,32 +357,32 @@ export default function HealthcareFinder() {
       </div>
 
       {/* Map + List Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px]">
-        {/* Leaflet Map */}
-        <div className="lg:col-span-2 bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden relative shadow-xl">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[580px]">
+        {/* Map Viewport */}
+        <div className="lg:col-span-2 bg-white border border-slate-200 rounded-xl overflow-hidden relative shadow-xs">
           <div ref={mapContainerRef} className="w-full h-full z-10" />
 
           {fetchingOverpass && (
-            <div className="absolute top-4 left-4 z-[500] bg-gray-950/90 border border-blue-500/30 text-blue-400 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 backdrop-blur-md">
-              <RefreshCw size={12} className="animate-spin" /> Fetching OpenStreetMap Facilities...
+            <div className="absolute top-4 left-4 z-[500] bg-white/90 border border-blue-200 text-blue-700 px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 shadow-sm backdrop-blur-xs">
+              <RefreshCw size={13} className="animate-spin" /> Querying OpenStreetMap Services...
             </div>
           )}
         </div>
 
-        {/* Facilities List */}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-4 flex flex-col h-full overflow-hidden">
-          <div className="flex items-center justify-between mb-3 px-1">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <MapPin size={16} className="text-blue-400" />
-              Facilities in {activeCityName} ({processedFacilities.length})
+        {/* Facilities Side List */}
+        <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col h-full overflow-hidden shadow-xs">
+          <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-100">
+            <h3 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+              <MapPin size={14} className="text-blue-600" />
+              {activeCityName} Facilities ({processedFacilities.length})
             </h3>
-            <span className="text-xs text-gray-500">By distance</span>
+            <span className="text-[11px] text-slate-500 font-medium">Sorted by distance</span>
           </div>
 
-          <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+          <div className="flex-1 overflow-y-auto space-y-2.5 pr-1">
             {processedFacilities.length === 0 ? (
-              <div className="text-center py-12 text-gray-500 text-xs">
-                No healthcare facilities found for this selection.
+              <div className="text-center py-12 text-slate-500 text-xs font-medium border border-slate-100 border-dashed rounded-lg">
+                No healthcare facilities found for this filter.
               </div>
             ) : (
               processedFacilities.map((fac) => {
@@ -412,47 +394,37 @@ export default function HealthcareFinder() {
                   <div
                     key={fac.id}
                     onClick={() => handleSelectFacility(fac)}
-                    className={`p-3.5 rounded-xl border transition-all cursor-pointer ${
+                    className={`p-3 rounded-lg border transition-all cursor-pointer ${
                       isSelected
-                        ? "bg-blue-600/10 border-blue-500/50 shadow-md"
-                        : "bg-gray-950 border-gray-800 hover:border-gray-700 hover:bg-gray-850"
+                        ? "bg-blue-50/70 border-blue-300 shadow-2xs"
+                        : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/60"
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <div
-                          className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs ${
-                            isHospital
-                              ? "bg-red-500/10 text-red-400 border border-red-500/20"
-                              : isPharmacy
-                              ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                              : "bg-purple-500/10 text-purple-400 border border-purple-500/20"
-                          }`}
-                        >
+                      <div className="flex items-center gap-2.5">
+                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs flex-shrink-0 ${
+                          isHospital ? "bg-red-100 text-red-700" : isPharmacy ? "bg-emerald-100 text-emerald-700" : "bg-purple-100 text-purple-700"
+                        }`}>
                           {isHospital ? "🏥" : isPharmacy ? "💊" : "🔬"}
                         </div>
                         <div>
-                          <h4 className="text-xs font-bold text-white leading-snug">{fac.name}</h4>
-                          <p className="text-[11px] text-gray-400 truncate max-w-[170px] mt-0.5">
+                          <h4 className="text-xs font-bold text-slate-900 leading-snug">{fac.name}</h4>
+                          <p className="text-[11px] text-slate-500 truncate max-w-[170px] mt-0.5 font-medium">
                             {fac.address}
                           </p>
                         </div>
                       </div>
 
-                      <span className="text-xs font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-md border border-blue-500/20 whitespace-nowrap">
-                        {fac.distanceKm} km
-                      </span>
+                      <Badge variant="info" size="sm">{fac.distanceKm} km</Badge>
                     </div>
 
-                    <div className="mt-3 pt-2 border-t border-gray-800/80 flex items-center justify-between text-[11px]">
-                      <div className="flex items-center gap-3 text-gray-400">
-                        {fac.phone && (
-                          <span className="flex items-center gap-1">
-                            <Clock size={11} className="text-gray-500" /> {fac.phone}
-                          </span>
-                        )}
+                    <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                      <div className="flex items-center gap-2 text-slate-500">
                         {fac.open247 && (
-                          <span className="text-emerald-400 font-semibold">24/7 Open</span>
+                          <Badge variant="success" size="sm">Open 24/7</Badge>
+                        )}
+                        {fac.phone && (
+                          <span className="font-medium text-slate-600 truncate max-w-[110px]">{fac.phone}</span>
                         )}
                       </div>
 
@@ -461,9 +433,9 @@ export default function HealthcareFinder() {
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="text-blue-400 hover:text-blue-300 font-semibold flex items-center gap-1"
+                        className="text-blue-600 font-semibold flex items-center gap-1 hover:underline"
                       >
-                        Directions <ExternalLink size={10} />
+                        Directions <ExternalLink size={11} />
                       </a>
                     </div>
                   </div>

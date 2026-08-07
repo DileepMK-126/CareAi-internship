@@ -256,9 +256,7 @@ export const api = {
     return request("GET", `/api/medications?user_id=${getUserId()}`);
   },
 
-  getAppointments: async () => {
-    return request("GET", `/api/appointments?user_id=${getUserId()}`);
-  },
+
 
   uploadPrescription: async (file: File) => {
     const form = new FormData();

@@ -304,9 +304,7 @@ def generate_condition_meal_plan(condition: str, dietary_preferences: str, durat
     prompt = f'Create a {duration_days}-day meal plan for: {condition}\nDietary Preferences: {dietary_preferences}\n\nFor each day: Breakfast, Morning Snack, Lunch, Evening Snack, Dinner.\nInclude daily macro totals.\nList key foods to AVOID and INCLUDE for this condition.\n\nDISCLAIMER: Consult a registered dietitian for personalized plans.'
     return groq_generate(prompt)
 
-def get_appointment_checklist(doctor: str, specialty: str, date: str, time: str, notes: str) -> str:
-    prompt = f'Generate a pre-appointment checklist for:\nDoctor: {doctor} ({specialty}), Appointment: {date} at {time}\nNotes: {notes}\n\nInclude:\n1. Documents to bring\n2. Questions to ask\n3. Symptoms to describe\n4. Medications to list\n5. Preparation requirements for {specialty}\n6. Day-before reminders'
-    return groq_generate(prompt)
+
 
 def get_second_opinion(primary_diagnosis: str, symptoms: str, lab_results: str='', medications: str='') -> str:
     prompt = f"You are a panel of three specialist physicians (Internist, Specialist, GP).\nPrimary Diagnosis: {primary_diagnosis}\nSymptoms: {symptoms}\nLab Results: {lab_results or 'Not provided'}\nMedications: {medications or 'Not provided'}\n\nAs a PANEL, provide:\n1. Differential Diagnosis List (Top 5 with probability %)\n2. Agreement/Disagreement with primary diagnosis\n3. Potentially Missed Diagnoses\n4. Confirmatory Tests Recommended\n5. Specialist Referral Recommendations\n6. Consensus Opinion\n\nDISCLAIMER: AI-generated second opinion for informational purposes only."
