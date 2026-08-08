@@ -108,7 +108,7 @@ export default function Sidebar() {
           </div>
           <div>
             <div className="text-sm font-bold text-slate-900 leading-tight">CareAI</div>
-            <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Enterprise v4.0</div>
+            <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Healthcare v4.0</div>
           </div>
         </div>
       </div>

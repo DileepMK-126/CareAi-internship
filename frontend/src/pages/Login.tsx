@@ -72,16 +72,12 @@ export default function Login() {
           </div>
           <div>
             <span className="text-xl font-bold text-slate-900 leading-tight block">CareAI</span>
-            <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">Enterprise Platform</span>
+            <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">Healthcare Platform</span>
           </div>
         </div>
 
         {/* Auth Card */}
         <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-xs">
-          <div className="mb-6 text-center">
-            <h1 className="text-xl font-bold text-slate-900">Sign in to Enterprise Workspace</h1>
-            <p className="text-xs text-slate-500 mt-1">Access clinical AI diagnostic tools and patient records</p>
-          </div>
 
           {error && <div className="mb-4"><AlertBanner variant="error" message={error} dismissible /></div>}
 
@@ -160,7 +156,7 @@ export default function Login() {
           </div>
 
           <div className="mt-6 text-center text-xs text-slate-500 font-medium">
-            Don't have an enterprise account?{" "}
+            Don't have an account?{" "}
             <Link to="/register" className="text-blue-600 font-bold hover:underline">
               Create Account
             </Link>

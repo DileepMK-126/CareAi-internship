@@ -28,7 +28,7 @@ export default function LandingPage() {
           </div>
           <div>
             <span className="font-bold text-base text-slate-900 leading-tight block">CareAI</span>
-            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">Enterprise Platform</span>
+            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">Healthcare Platform</span>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -116,7 +116,7 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="bg-slate-50 border-t border-slate-200 px-8 py-6 text-center text-xs font-medium text-slate-500">
-        © 2026 CareAI Enterprise Healthcare Platform · Designed for clinical decision support. Not a substitute for professional medical advice.
+        © 2026 CareAI Healthcare Platform · Designed for clinical decision support. Not a substitute for professional medical advice.
       </footer>
     </div>
   );

@@ -54,7 +54,7 @@ export default function Register() {
           </div>
           <div>
             <span className="text-xl font-bold text-slate-900 leading-tight block">CareAI</span>
-            <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">Enterprise Platform</span>
+            <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">Healthcare Platform</span>
           </div>
         </div>
 
@@ -155,7 +155,7 @@ export default function Register() {
               disabled={loading}
               className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white rounded-lg font-bold text-xs transition-all shadow-xs flex items-center justify-center gap-2"
             >
-              {loading ? "Creating Account..." : "Create Enterprise Account"}
+              {loading ? "Creating Account..." : "Create Account"}
             </button>
           </form>
 
@@ -168,7 +168,7 @@ export default function Register() {
         </div>
 
         <div className="text-center text-[11px] text-slate-400 flex items-center justify-center gap-1.5">
-          <ShieldCheck size={14} className="text-slate-400" /> Enterprise Health Data Privacy Standard
+          <ShieldCheck size={14} className="text-slate-400" /> Health Data Privacy Standard
         </div>
       </div>
     </div>
